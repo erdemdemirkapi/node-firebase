@@ -26,8 +26,14 @@ jobs:
         FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
       run: yarn test
 
-    - name: Build application
-      run: yarn build
+    - name: Authenticate Docker to GCR
+      run: gcloud auth configure-docker --quiet
+
+    - name: Build Docker image
+      run: docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ github.sha }} .
+
+    - name: Push Docker image to GCR
+      run: docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ github.sha }}
 
     - name: Configure Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v0.2.0
