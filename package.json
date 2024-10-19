@@ -25,7 +25,8 @@
   "scripts": {
     "start": "ts-node src/app.ts",
     "dev": "nodemon --exec ts-node src/app.ts",
-    "test": "jest --verbose"
+    "test": "jest --verbose",
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/supertest": "^6.0.2",
