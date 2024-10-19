@@ -22,6 +22,8 @@ jobs:
       run: yarn install
 
     - name: Run tests
+      env:
+        FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
       run: yarn test
 
     - name: Build application
