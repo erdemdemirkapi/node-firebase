@@ -5,6 +5,14 @@ on:
     branches:
       - main
 
+env:
+  FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+  FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+  FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+  FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+  FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+  BASE_URL: ${{ secrets.BASE_URL }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,15 +34,21 @@ jobs:
         FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
       run: yarn test
 
-    - name: Authenticate Docker to GCR
-      run: gcloud auth configure-docker --quiet
+    - name: Decode Google Cloud Credentials
+      run: echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_BASE64 }}" | base64 --decode > gcloud-key.json
+
+    - name: Authenticate with Google Cloud
+      run: |
+        gcloud auth activate-service-account --key-file=gcloud-key.json
+        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+        gcloud auth configure-docker
 
     - name: Build Docker image
       run: docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ github.sha }} .
 
     - name: Push Docker image to GCR
       run: docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ github.sha }}
-
+    
     - name: Configure Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v0.2.0
       with:
@@ -48,4 +62,9 @@ jobs:
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ github.sha }} \
           --platform managed \
           --region ${{ secrets.GCP_REGION }} \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --set-env-vars FIREBASE_SERVICE_ACCOUNT_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }} \
+          --set-env-vars FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }} \
+          --set-env-vars FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
+          --set-env-vars FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }} \
+          --set-env-vars FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}
